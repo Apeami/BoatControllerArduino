@@ -1,6 +1,8 @@
 #include <WiFiNINA.h>
 #include <WiFiUdp.h>
 
+//#define DEBUG
+
 char ssid[] = "AndroidAP8BE4";        // your network SSID (name)
 char pass[] = "fgou8655";    // your network password (use for WPA, or use as key for WEP)
 int status = WL_IDLE_STATUS;     // the Wifi radio's status
@@ -70,22 +72,26 @@ char* readInformation(){
   resetBuffer();
   int packetSize = Udp.parsePacket();
   if (packetSize) {
+    IPAddress remoteIp = Udp.remoteIP();
+    #ifdef DEBUG
     Serial.print("Received packet of size ");
     Serial.println(packetSize);
     Serial.print("From ");
-    IPAddress remoteIp = Udp.remoteIP();
     Serial.print(remoteIp);
     Serial.print(", port ");
     Serial.println(Udp.remotePort());
+    #endif
     // read the packet into packetBufffer
     int len = Udp.read(packetBuffer, packetBufferLEN-1);
     if (len > 0) {
       packetBuffer[len] = 0;
     }
+    #ifdef DEBUG
     Serial.println("Contents:");
     for (int i=0;i<2;i++){
       Serial.println(packetBuffer[i],HEX);
     }
+    #endif
   }
   return packetBuffer;
 }
@@ -108,10 +114,6 @@ void loop() {
 
   //SEND gathered data out
   prepareData(dataSend);
-  Serial.println("Reading:");
-  for (int i=0;i<4;i++){
-      Serial.println(dataSend[i],HEX);
-    }
   sendInformation(dataSend);
 
   //DELAY for timing
