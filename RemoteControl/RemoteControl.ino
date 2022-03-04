@@ -1,14 +1,14 @@
 #include <WiFiNINA.h>
 #include <WiFiUdp.h>
 
-//#define DEBUG
+#define DEBUG
 
 char ssid[] = "AndroidAP8BE4";        // your network SSID (name)
 char pass[] = "fgou8655";    // your network password (use for WPA, or use as key for WEP)
 int status = WL_IDLE_STATUS;     // the Wifi radio's status
 
 unsigned int localPort = 2390;      // local port to listen on
-const char* IPaddr = "192.168.174.11"; //Ip address to listen to
+const char* IPaddr = "192.168.169.11"; //Ip address to listen to
 
 WiFiUDP Udp;
 
@@ -32,6 +32,8 @@ void prepareData(char* buffer){
 
   buffer[2] = digitalRead(BUT_1);
   buffer[3] = digitalRead(BUT_2);
+
+  buffer[4] = 1;
 }
 
 void setTestLED(int value){
@@ -52,9 +54,12 @@ void setUpNetwork(){
 }
 
 void sendInformation(char* data){
+   data[5]=0;
+   for (int i=0;i<5;i++){data[i]+=1;}
    Udp.beginPacket(IPaddr, localPort);
    Udp.write(data);
    Udp.endPacket();
+   for (int i=0;i<5;i++){data[i]-=1;}
 }
 
 
@@ -86,13 +91,14 @@ char* readInformation(){
     if (len > 0) {
       packetBuffer[len] = 0;
     }
-    #ifdef DEBUG
-    Serial.println("Contents:");
-    for (int i=0;i<2;i++){
-      Serial.println(packetBuffer[i],HEX);
-    }
-    #endif
+    for (int i=0;i<2;i++){packetBuffer[i]-=1;}
   }
+   #ifdef DEBUG
+   Serial.println("Contents:");
+   for (int i=0;i<2;i++){
+     Serial.println(packetBuffer[i],HEX);
+   }
+   #endif
   return packetBuffer;
 }
 

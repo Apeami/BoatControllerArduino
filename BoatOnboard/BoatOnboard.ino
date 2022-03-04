@@ -2,14 +2,16 @@
 #include <WiFiNINA.h>
 #include <WiFiUdp.h>
 
-//#define DEBUG
+#define DEBUG
 
 char ssid[] = "AndroidAP8BE4";        // your network SSID (name)
 char pass[] = "fgou8655";    // your network password (use for WPA, or use as key for WEP)
 int status = WL_IDLE_STATUS;     // the Wifi radio's status
 
 unsigned int localPort = 2390;      // local port to listen on
-const char* IPaddr = "192.168.174.171"; //Ip address to listen to
+const char* IPaddr = "192.168.169.171"; //Ip address to listen to
+
+int connectedController = 0;
 
 WiFiUDP Udp;
 
@@ -25,20 +27,27 @@ void setUpMotor(){
   M1.setDuty(0); M2.setDuty(0); M3.setDuty(0); M4.setDuty(0);
 }
 
-#define Cfoward  1.43;
+#define Cfoward  1.00;
 #define Cturn  5;
 void motorChange(int forward, int turn){
   //forward 0 to 100, turn 0 to 100 , actually 93 but for simplicity it will be 100 in model
   //Foward and turn value comes in from the controller and is within the range.
   // need to use the setduty functions from -100 to 100 to control motor
-  
-  //CONTROL SYSTEM NEEDS TO BE IMPLEMENTED START
-  int forwardV=(forward-50)/Cfoward;
-  int turnV=(turn-50)/Cturn;
-  M3.setDuty(forwardV+turnV);
-  //M3.setDuty(100); //This is 100 full motor speed
-  M4.setDuty(forwardV-turnV);
-  //CONTROL SYSTEM NEEDS TO BE IMPLEMENTENTED END
+  Serial.println("DATA");
+  Serial.println(forward);
+  Serial.println(turn);
+  if (connectedController){
+    //CONTROL SYSTEM NEEDS TO BE IMPLEMENTED START
+    int forwardV=(forward-50)/Cfoward;
+    int turnV=(turn-50)/Cturn;
+    M3.setDuty(forwardV+turnV);
+    //M3.setDuty(100); //This is 100 full motor speed
+    M4.setDuty(forwardV-turnV);
+    //CONTROL SYSTEM NEEDS TO BE IMPLEMENTENTED END
+  }else{
+    M3.setDuty(0);
+    M4.setDuty(0);
+  }
 }
 
 void setUpNetwork(){
@@ -53,9 +62,12 @@ void setUpNetwork(){
 }
 
 void sendInformation(char* data){
+   data[2]=0;
+   for (int i=0;i<2;i++){data[i]+=1;}
    Udp.beginPacket(IPaddr, localPort);
    Udp.write(data);
    Udp.endPacket();
+   for (int i=0;i<2;i++){data[i]-=1;}
 }
 
 #define packetBufferLEN 20
@@ -85,13 +97,17 @@ char* readInformation(){
     if (len > 0) {
       packetBuffer[len] = 0;
     }
-    #ifdef DEBUG
-    Serial.println("Contents:");
-    for (int i=0;i<4;i++){
-      Serial.println(packetBuffer[i],HEX);
-    }
-    #endif
+    for (int i=0;i<5;i++){packetBuffer[i]-=1;}
+
   }
+   #ifdef DEBUG
+   Serial.println("Contents:");
+   for (int i=0;i<5;i++){
+     Serial.println(packetBuffer[i],HEX);
+   }
+   #endif
+  Serial.println("REcievedPRE");
+  Serial.println(packetBuffer[4],HEX);
   return packetBuffer;
 }
 
@@ -112,6 +128,12 @@ void loop() {
   
   motorChange(recievedData[0], recievedData[1]);
 
+  connectedController = recievedData[4];
+  Serial.println("REcieved");
+  Serial.println(recievedData[4],HEX);
+  if (recievedData[4]==0){
+    Serial.println("ZERO");
+  }
   //SEND gathered data out
   sendInformation(dataSend);
 
