@@ -40,9 +40,11 @@ void motorChange(int forward, int turn){
     //CONTROL SYSTEM NEEDS TO BE IMPLEMENTED START
     int forwardV=(forward-50)/Cfoward;
     int turnV=(turn-50)/Cturn;
-    M3.setDuty(forwardV+turnV);
-    //M3.setDuty(100); //This is 100 full motor speed
-    M4.setDuty(forwardV-turnV);
+    //M3.setDuty(forwardV+turnV);
+    //M4.setDuty(forwardV-turnV);
+    M3.setDuty(100); //This is 100 full motor speed
+    M4.setDuty(100);
+   
     //CONTROL SYSTEM NEEDS TO BE IMPLEMENTENTED END
   }else{
     M3.setDuty(0);
@@ -80,9 +82,10 @@ void resetBuffer(){
 }
 
 char* readInformation(){
-  resetBuffer();
+  packetBuffer[4]=0;
   int packetSize = Udp.parsePacket();
   if (packetSize) {
+    resetBuffer();
     IPAddress remoteIp = Udp.remoteIP();
     #ifdef DEBUG
     Serial.print("Received packet of size ");
@@ -106,8 +109,6 @@ char* readInformation(){
      Serial.println(packetBuffer[i],HEX);
    }
    #endif
-  Serial.println("REcievedPRE");
-  Serial.println(packetBuffer[4],HEX);
   return packetBuffer;
 }
 
@@ -129,11 +130,7 @@ void loop() {
   motorChange(recievedData[0], recievedData[1]);
 
   connectedController = recievedData[4];
-  Serial.println("REcieved");
-  Serial.println(recievedData[4],HEX);
-  if (recievedData[4]==0){
-    Serial.println("ZERO");
-  }
+
   //SEND gathered data out
   sendInformation(dataSend);
 

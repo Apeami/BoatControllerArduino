@@ -26,12 +26,26 @@ void setUpController(){
   pinMode(BUT_2,INPUT);
 }
 
+int cu1=0;
+int cu2=0;
 void prepareData(char* buffer){
   buffer[0] = analogRead(POT_1)/11;
   buffer[1] = analogRead(POT_2)/11;
 
-  buffer[2] = digitalRead(BUT_1);
-  buffer[3] = digitalRead(BUT_2);
+
+   buffer[2] = digitalRead(BUT_1);
+   buffer[3] = digitalRead(BUT_2);
+
+   if (buffer[2]==1){cu1++;}else{cu1=0;}
+   if (buffer[3]==1){cu2++;}else{cu2=0;}
+   if (cu1>10){buffer[2]=1;}else{buffer[2]=0;}
+   if (cu2>10){buffer[3]=1;}else{buffer[3]=0;}
+    
+  Serial.println("Input Values");
+  Serial.println(buffer[0],HEX);
+  Serial.println(buffer[1],HEX);
+  Serial.println(buffer[2],HEX);
+  Serial.println(buffer[3],HEX);
 
   buffer[4] = 1;
 }
@@ -74,9 +88,10 @@ void resetBuffer(){
 }
 
 char* readInformation(){
-  resetBuffer();
+  packetBuffer[0]=0;
   int packetSize = Udp.parsePacket();
   if (packetSize) {
+    resetBuffer();
     IPAddress remoteIp = Udp.remoteIP();
     #ifdef DEBUG
     Serial.print("Received packet of size ");
