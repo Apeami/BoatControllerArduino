@@ -10,7 +10,6 @@ char pass[] = "fgou8655";    // your network password (use for WPA, or use as ke
 unsigned int localPort = 2390;      // local port to listen on
 const char* IPaddr = "192.168.169.11"; //Ip address to listen to
 
-WiFiUDP Udp;
 
 const int LED_RED = 2;
 const int LED_GREEN = 3;

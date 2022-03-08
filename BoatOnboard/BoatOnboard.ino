@@ -13,8 +13,6 @@ const char* IPaddr = "192.168.169.171"; //Ip address to listen to
 
 int connectedController = 0;
 
-WiFiUDP Udp;
-
 void setUpMotor(){
   controller.begin();
   controller.reboot();
