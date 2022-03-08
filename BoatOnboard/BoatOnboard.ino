@@ -1,4 +1,4 @@
-#include <networkControl.h>
+#include "networkControl.h"
 #include <ArduinoMotorCarrier.h>
 #include <WiFiNINA.h>
 #include <WiFiUdp.h>
@@ -35,15 +35,41 @@ void motorChange(int forward, int turn){
   Serial.println(forward);
   Serial.println(turn);
   if (connectedController){
-    //CONTROL SYSTEM NEEDS TO BE IMPLEMENTED START
-    int forwardV=(forward-50)/Cfoward;
-    int turnV=(turn-50)/Cturn;
-    //M3.setDuty(forwardV+turnV);
-    //M4.setDuty(forwardV-turnV);
-    M3.setDuty(100); //This is 100 full motor speed
-    M4.setDuty(100);
+    //CONTROL SYSTEM NEEDS TO BE IMPLEMENTED 
+    //START OF CONTROL SYSTEM
+    //Input values forward 0 - 93, turn 0 - 93
+    //Output values motor -100 - 100
+
+    //Define general constants
+    const int inputRange = 93;
+    const int outputRange = 200;
+
+    //Define specific constants
+    const double turnRatio = 0.2;
+
+    //Control calculation
+    forward -= (inputRange/2);
+    turn -= (inputRange/2);
+
+    //Linear function for forward motion
+    forward = forward * (outputRange / inputRange);
+    //Linear function for forward motion
+
+    int forward3 , forward4 = forward;
+    
+    if (turn>0){
+      forward3 -= (forward3 * turnRatio);
+    }else if(turn<=0){
+      forward4 -= (forward4 * turnRatio);
+    }
+    
+    //Set the motors
+    M3.setDuty(forward3);
+    M4.setDuty(forward4);
+    //M3.setDuty(100);
+    //M4.setDuty(100);
    
-    //CONTROL SYSTEM NEEDS TO BE IMPLEMENTENTED END
+    //END OF CONTROL SYSTEM
   }else{
     M3.setDuty(0);
     M4.setDuty(0);
