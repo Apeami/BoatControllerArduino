@@ -1,12 +1,12 @@
+#include <networkControl.h>
 #include <ArduinoMotorCarrier.h>
 #include <WiFiNINA.h>
 #include <WiFiUdp.h>
 
 #define DEBUG
 
-char ssid[] = "AndroidAP8BE4";        // your network SSID (name)
-char pass[] = "fgou8655";    // your network password (use for WPA, or use as key for WEP)
-int status = WL_IDLE_STATUS;     // the Wifi radio's status
+const char ssid[] = "AndroidAP8BE4";        // your network SSID (name)
+const char pass[] = "fgou8655";    // your network password (use for WPA, or use as key for WEP)
 
 unsigned int localPort = 2390;      // local port to listen on
 const char* IPaddr = "192.168.169.171"; //Ip address to listen to
@@ -52,71 +52,11 @@ void motorChange(int forward, int turn){
   }
 }
 
-void setUpNetwork(){
-    while (status != WL_CONNECTED) {
-    Serial.print("Attempting to connect to network: ");
-    Serial.println(ssid);
-    status = WiFi.begin(ssid, pass);
-    delay(10000);
-  }
-  Serial.println("You're connected to the network");
-  Udp.begin(localPort);
-}
-
-void sendInformation(char* data){
-   data[2]=0;
-   for (int i=0;i<2;i++){data[i]+=1;}
-   Udp.beginPacket(IPaddr, localPort);
-   Udp.write(data);
-   Udp.endPacket();
-   for (int i=0;i<2;i++){data[i]-=1;}
-}
-
-#define packetBufferLEN 20
-char packetBuffer[packetBufferLEN]; //buffer to hold incoming packet
-
-void resetBuffer(){
-  for(int i=0;i<packetBufferLEN;i++){
-    packetBuffer[i]=0;
-  }
-}
-
-char* readInformation(){
-  packetBuffer[4]=0;
-  int packetSize = Udp.parsePacket();
-  if (packetSize) {
-    resetBuffer();
-    IPAddress remoteIp = Udp.remoteIP();
-    #ifdef DEBUG
-    Serial.print("Received packet of size ");
-    Serial.println(packetSize);
-    Serial.print("From ");
-    Serial.print(remoteIp);
-    Serial.print(", port ");
-    Serial.println(Udp.remotePort());
-    #endif
-    // read the packet into packetBufffer
-    int len = Udp.read(packetBuffer, packetBufferLEN-1);
-    if (len > 0) {
-      packetBuffer[len] = 0;
-    }
-    for (int i=0;i<5;i++){packetBuffer[i]-=1;}
-
-  }
-   #ifdef DEBUG
-   Serial.println("Contents:");
-   for (int i=0;i<5;i++){
-     Serial.println(packetBuffer[i],HEX);
-   }
-   #endif
-  return packetBuffer;
-}
-
 
 void setup() {
   Serial.begin(9600);
   //while (!Serial);
-  setUpNetwork();
+  setUpNetwork(localPort, ssid, pass);
   setUpMotor();
 }
 
@@ -125,14 +65,13 @@ char dataSend[] = {1,0};
 void loop() {
   
   //DO stuff with recieved data
-  char* recievedData = readInformation();
+  char* recievedData = readInformation(4,4);
+  connectedController = recievedData[4];
   
   motorChange(recievedData[0], recievedData[1]);
 
-  connectedController = recievedData[4];
-
   //SEND gathered data out
-  sendInformation(dataSend);
+  sendInformation(dataSend,2, localPort, IPaddr);
 
   //DELAY for timing
   delay(100);
