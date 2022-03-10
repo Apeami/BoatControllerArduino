@@ -1,19 +1,17 @@
+#include "networkControl.h"
 #include <ArduinoMotorCarrier.h>
 #include <WiFiNINA.h>
 #include <WiFiUdp.h>
 
 #define DEBUG
 
-char ssid[] = "AndroidAP8BE4";        // your network SSID (name)
-char pass[] = "fgou8655";    // your network password (use for WPA, or use as key for WEP)
-int status = WL_IDLE_STATUS;     // the Wifi radio's status
+const char ssid[] = "AndroidAP8BE4";        // your network SSID (name)
+const char pass[] = "fgou8655";    // your network password (use for WPA, or use as key for WEP)
 
 unsigned int localPort = 2390;      // local port to listen on
-const char* IPaddr = "192.168.169.171"; //Ip address to listen to
+const char* IPaddr = "192.168.122.171"; //Ip address to listen to
 
 int connectedController = 0;
-
-WiFiUDP Udp;
 
 void setUpMotor(){
   controller.begin();
@@ -37,86 +35,57 @@ void motorChange(int forward, int turn){
   Serial.println(forward);
   Serial.println(turn);
   if (connectedController){
-    //CONTROL SYSTEM NEEDS TO BE IMPLEMENTED START
-    int forwardV=(forward-50)/Cfoward;
-    int turnV=(turn-50)/Cturn;
-    //M3.setDuty(forwardV+turnV);
-    //M4.setDuty(forwardV-turnV);
-    M3.setDuty(100); //This is 100 full motor speed
-    M4.setDuty(100);
+    //CONTROL SYSTEM NEEDS TO BE IMPLEMENTED 
+    //START OF CONTROL SYSTEM
+    //Input values forward 0 - 93, turn 0 - 93
+    //Output values motor -100 - 100
+
+    //Define general constants
+    const int inputRange = 93;
+    const int outputRange = 200;
+
+    //Define specific constants
+    const double turnRatio = 0.3;
+
+    //Control calculation
+    forward -= (inputRange/2);
+    turn -= (inputRange/2);
+
+    //Linear function for forward motion
+    forward = (forward * outputRange) / inputRange;
+    //Linear function for forward motion
+    Serial.println(forward);
+    Serial.println(turn);
+    int forward3 = forward;
+    int forward4 = forward;
+    if (forward>0){
+      forward3 -= (turn * turnRatio);
+      forward4 += (turn * turnRatio);
+    }else if(forward<=0){
+      forward3 += (turn * turnRatio);
+      forward4 -= (turn * turnRatio);
+    }
+
+    Serial.println(forward3);
+    Serial.println(forward4);
+    //Set the motors
+    M3.setDuty(forward3);
+    M4.setDuty(forward4);
+    //M3.setDuty(100);
+    //M4.setDuty(100);
    
-    //CONTROL SYSTEM NEEDS TO BE IMPLEMENTENTED END
+    //END OF CONTROL SYSTEM
   }else{
     M3.setDuty(0);
     M4.setDuty(0);
   }
 }
 
-void setUpNetwork(){
-    while (status != WL_CONNECTED) {
-    Serial.print("Attempting to connect to network: ");
-    Serial.println(ssid);
-    status = WiFi.begin(ssid, pass);
-    delay(10000);
-  }
-  Serial.println("You're connected to the network");
-  Udp.begin(localPort);
-}
-
-void sendInformation(char* data){
-   data[2]=0;
-   for (int i=0;i<2;i++){data[i]+=1;}
-   Udp.beginPacket(IPaddr, localPort);
-   Udp.write(data);
-   Udp.endPacket();
-   for (int i=0;i<2;i++){data[i]-=1;}
-}
-
-#define packetBufferLEN 20
-char packetBuffer[packetBufferLEN]; //buffer to hold incoming packet
-
-void resetBuffer(){
-  for(int i=0;i<packetBufferLEN;i++){
-    packetBuffer[i]=0;
-  }
-}
-
-char* readInformation(){
-  packetBuffer[4]=0;
-  int packetSize = Udp.parsePacket();
-  if (packetSize) {
-    resetBuffer();
-    IPAddress remoteIp = Udp.remoteIP();
-    #ifdef DEBUG
-    Serial.print("Received packet of size ");
-    Serial.println(packetSize);
-    Serial.print("From ");
-    Serial.print(remoteIp);
-    Serial.print(", port ");
-    Serial.println(Udp.remotePort());
-    #endif
-    // read the packet into packetBufffer
-    int len = Udp.read(packetBuffer, packetBufferLEN-1);
-    if (len > 0) {
-      packetBuffer[len] = 0;
-    }
-    for (int i=0;i<5;i++){packetBuffer[i]-=1;}
-
-  }
-   #ifdef DEBUG
-   Serial.println("Contents:");
-   for (int i=0;i<5;i++){
-     Serial.println(packetBuffer[i],HEX);
-   }
-   #endif
-  return packetBuffer;
-}
-
 
 void setup() {
   Serial.begin(9600);
   //while (!Serial);
-  setUpNetwork();
+  setUpNetwork(localPort, ssid, pass);
   setUpMotor();
 }
 
@@ -125,14 +94,13 @@ char dataSend[] = {1,0};
 void loop() {
   
   //DO stuff with recieved data
-  char* recievedData = readInformation();
+  char* recievedData = readInformation(4,5);
+  connectedController = recievedData[4];
   
   motorChange(recievedData[0], recievedData[1]);
 
-  connectedController = recievedData[4];
-
   //SEND gathered data out
-  sendInformation(dataSend);
+  sendInformation(dataSend,2, localPort, IPaddr);
 
   //DELAY for timing
   delay(100);
