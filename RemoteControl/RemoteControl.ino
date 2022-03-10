@@ -1,4 +1,4 @@
-#include <networkControl.h>
+#include "networkControl.h"
 #include <WiFiNINA.h>
 #include <WiFiUdp.h>
 
@@ -8,8 +8,9 @@ char ssid[] = "AndroidAP8BE4";        // your network SSID (name)
 char pass[] = "fgou8655";    // your network password (use for WPA, or use as key for WEP)
 
 unsigned int localPort = 2390;      // local port to listen on
-const char* IPaddr = "192.168.169.11"; //Ip address to listen to
+const char* IPaddr = "192.168.122.38"; //Ip address to listen to
 
+int systemON = 0;
 
 const int LED_RED = 2;
 const int LED_GREEN = 3;
@@ -57,6 +58,30 @@ void setTestLED(int value){
   if (value==1){digitalWrite(LED_RED, HIGH);}
 }
 
+void checkForON(char* dataSend){
+  static int prevSend=0;
+  if (dataSend[2]==1 && prevSend==0){
+    if (systemON==1){
+      systemON=0;
+      dataSend[4] = 0;
+      digitalWrite(LED_GREEN, LOW);
+    }else if (systemON==0){
+      systemON=1;
+      dataSend[4] = 1;
+      digitalWrite(LED_GREEN, HIGH);
+    }
+  }
+  prevSend=dataSend[2];
+}
+
+void enableSystem(char* dataSend){
+  if (systemON==0){
+    dataSend[4] = 0;
+  }else if (systemON==1){
+    dataSend[4] = 1;
+  }
+}
+
 void setup() {
   Serial.begin(9600);
   //while (!Serial);
@@ -64,9 +89,10 @@ void setup() {
   setUpController();
 }
 
-char dataSend[] = {0,0,0,0};
+char dataSend[] = {0,0,0,0,0};
 
 void loop() {
+
   
   //DO stuff with recieved data
   char* recievedData = readInformation(0,2);
@@ -74,7 +100,9 @@ void loop() {
 
   //SEND gathered data out
   prepareData(dataSend);
-  sendInformation(dataSend,4, localPort, IPaddr);
+  checkForON(dataSend);
+  enableSystem(dataSend);
+  sendInformation(dataSend,5, localPort, IPaddr);
 
   //DELAY for timing
   delay(100);

@@ -9,7 +9,7 @@ const char ssid[] = "AndroidAP8BE4";        // your network SSID (name)
 const char pass[] = "fgou8655";    // your network password (use for WPA, or use as key for WEP)
 
 unsigned int localPort = 2390;      // local port to listen on
-const char* IPaddr = "192.168.169.171"; //Ip address to listen to
+const char* IPaddr = "192.168.122.171"; //Ip address to listen to
 
 int connectedController = 0;
 
@@ -45,24 +45,29 @@ void motorChange(int forward, int turn){
     const int outputRange = 200;
 
     //Define specific constants
-    const double turnRatio = 0.2;
+    const double turnRatio = 0.3;
 
     //Control calculation
     forward -= (inputRange/2);
     turn -= (inputRange/2);
 
     //Linear function for forward motion
-    forward = forward * (outputRange / inputRange);
+    forward = (forward * outputRange) / inputRange;
     //Linear function for forward motion
-
-    int forward3 , forward4 = forward;
-    
-    if (turn>0){
-      forward3 -= (forward3 * turnRatio);
-    }else if(turn<=0){
-      forward4 -= (forward4 * turnRatio);
+    Serial.println(forward);
+    Serial.println(turn);
+    int forward3 = forward;
+    int forward4 = forward;
+    if (forward>0){
+      forward3 -= (turn * turnRatio);
+      forward4 += (turn * turnRatio);
+    }else if(forward<=0){
+      forward3 += (turn * turnRatio);
+      forward4 -= (turn * turnRatio);
     }
-    
+
+    Serial.println(forward3);
+    Serial.println(forward4);
     //Set the motors
     M3.setDuty(forward3);
     M4.setDuty(forward4);
@@ -89,7 +94,7 @@ char dataSend[] = {1,0};
 void loop() {
   
   //DO stuff with recieved data
-  char* recievedData = readInformation(4,4);
+  char* recievedData = readInformation(4,5);
   connectedController = recievedData[4];
   
   motorChange(recievedData[0], recievedData[1]);
