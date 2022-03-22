@@ -1,6 +1,8 @@
 #include <WiFiNINA.h>
 #include <WiFiUdp.h>
 
+//#define DEBUG
+
 WiFiUDP Udp;
 
 int status = WL_IDLE_STATUS;     // the Wifi radio's status
