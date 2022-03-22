@@ -6,9 +6,11 @@
 
 char ssid[] = "AndroidAP8BE4";        // your network SSID (name)
 char pass[] = "fgou8655";    // your network password (use for WPA, or use as key for WEP)
+//const char ssid[] = "TP-Link_287E";        // your network SSID (name)
+//const char pass[] = "25876024";    // your network password (use for WPA, or use as key for WEP)
 
 unsigned int localPort = 2390;      // local port to listen on
-const char* IPaddr = "192.168.122.38"; //Ip address to listen to
+const char* IPaddr = "192.168.166.38"; //Ip address to listen to
 
 int systemON = 0;
 
@@ -105,5 +107,5 @@ void loop() {
   sendInformation(dataSend,5, localPort, IPaddr);
 
   //DELAY for timing
-  delay(100);
+  delay(50);
 }
